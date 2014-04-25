@@ -42,33 +42,26 @@ static const NSInteger TAG_OFFSET = 1000;
 {
 	CGRect rect = indicatorImageView.frame;
 	rect.origin.x = button.center.x - floorf(indicatorImageView.frame.size.width/2.0f);
-	rect.origin.y = TAB_BAR_HEIGHT - indicatorImageView.frame.size.height;
+	rect.origin.y = TAB_BAR_HEIGHT;
 	indicatorImageView.frame = rect;
 	indicatorImageView.hidden = NO;
 }
 
 - (void)selectTabButton:(UIButton *)button
 {
-	[button setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
-
-	UIImage *image = [[UIImage imageNamed:@"MHTabBarActiveTab"] stretchableImageWithLeftCapWidth:0 topCapHeight:0];
-	[button setBackgroundImage:image forState:UIControlStateNormal];
-	[button setBackgroundImage:image forState:UIControlStateHighlighted];
-	
-	[button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-	[button setTitleShadowColor:[UIColor colorWithWhite:0.0f alpha:0.5f] forState:UIControlStateNormal];
+    [button.titleLabel setFont:[UIFont fontWithName:@"ProximaNova-Bold" size:12]];
+    [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [button setBackgroundImage:nil forState:UIControlStateNormal];
+    [button setBackgroundColor:[UIColor colorWithRed:0.117647 green:0.129412 blue:0.141176 alpha:1.0]];
 }
 
 - (void)deselectTabButton:(UIButton *)button
 {
+    [button.titleLabel setFont:[UIFont fontWithName:@"ProximaNova-Bold" size:12]];
 	[button setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
-
-	UIImage *image = [[UIImage imageNamed:@"MHTabBarInactiveTab"] stretchableImageWithLeftCapWidth:1 topCapHeight:0];
-	[button setBackgroundImage:image forState:UIControlStateNormal];
-	[button setBackgroundImage:image forState:UIControlStateHighlighted];
-
-	[button setTitleColor:[UIColor colorWithRed:175/255.0f green:85/255.0f blue:58/255.0f alpha:1.0f] forState:UIControlStateNormal];
-	[button setTitleShadowColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [button setBackgroundImage:nil forState:UIControlStateNormal];
+    [button setBackgroundColor:[UIColor colorWithRed:0.117647 green:0.129412 blue:0.141176 alpha:1.0]];
+	[button setTitleColor:[UIColor colorWithRed:0.490196 green:0.494118 blue:0.498039 alpha:1.0] forState:UIControlStateNormal];
 }
 
 - (void)removeTabButtons
@@ -149,10 +142,26 @@ static const NSInteger TAG_OFFSET = 1000;
 	contentContainerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 	[self.view addSubview:contentContainerView];
 
-	indicatorImageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"MHTabBarIndicator"]];
+	indicatorImageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tab_arrow"]];
 	[self.view addSubview:indicatorImageView];
+    
+    UISwipeGestureRecognizer * swiperight=[[UISwipeGestureRecognizer alloc]initWithTarget:self action:@selector(swiperight:)];
+    swiperight.direction=UISwipeGestureRecognizerDirectionRight;
+    [self.view addGestureRecognizer:swiperight];
+    
+    UISwipeGestureRecognizer * swipeleft=[[UISwipeGestureRecognizer alloc]initWithTarget:self action:@selector(swipeleft:)];
+    swipeleft.direction=UISwipeGestureRecognizerDirectionLeft;
+    [self.view addGestureRecognizer:swipeleft];
 
 	[self reloadTabButtons];
+}
+
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    UIView *v = [[UIView alloc] initWithFrame:CGRectMake(0, TAB_BAR_HEIGHT, self.view.frame.size.width, 111)];
+    v.backgroundColor = [UIColor orangeColor];
+    [self.view addSubview:v];
+    [self.view sendSubviewToBack:v];
 }
 
 - (void)viewDidUnload
@@ -223,102 +232,106 @@ static const NSInteger TAG_OFFSET = 1000;
 
 - (void)setSelectedIndex:(NSUInteger)newSelectedIndex animated:(BOOL)animated
 {
-	NSAssert(newSelectedIndex < [self.viewControllers count], @"View controller index out of bounds");
-
-	if ([self.delegate respondsToSelector:@selector(mh_tabBarController:shouldSelectViewController:atIndex:)])
-	{
-		UIViewController *toViewController = [self.viewControllers objectAtIndex:newSelectedIndex];
-		if (![self.delegate mh_tabBarController:self shouldSelectViewController:toViewController atIndex:newSelectedIndex])
-			return;
-	}
-
-	if (![self isViewLoaded])
-	{
-		_selectedIndex = newSelectedIndex;
-	}
-	else if (_selectedIndex != newSelectedIndex)
-	{
-		UIViewController *fromViewController;
-		UIViewController *toViewController;
-
-		if (_selectedIndex != NSNotFound)
-		{
-			UIButton *fromButton = (UIButton *)[tabButtonsContainerView viewWithTag:TAG_OFFSET + _selectedIndex];
-			[self deselectTabButton:fromButton];
-			fromViewController = self.selectedViewController;
-		}
-
-		NSUInteger oldSelectedIndex = _selectedIndex;
-		_selectedIndex = newSelectedIndex;
-
-		UIButton *toButton;
-		if (_selectedIndex != NSNotFound)
-		{
-			toButton = (UIButton *)[tabButtonsContainerView viewWithTag:TAG_OFFSET + _selectedIndex];
-			[self selectTabButton:toButton];
-			toViewController = self.selectedViewController;
-		}
-
-		if (toViewController == nil)  // don't animate
-		{
-			[fromViewController.view removeFromSuperview];
-		}
-		else if (fromViewController == nil)  // don't animate
-		{
-			toViewController.view.frame = contentContainerView.bounds;
-			[contentContainerView addSubview:toViewController.view];
-			[self centerIndicatorOnButton:toButton];
-
-			if ([self.delegate respondsToSelector:@selector(mh_tabBarController:didSelectViewController:atIndex:)])
-				[self.delegate mh_tabBarController:self didSelectViewController:toViewController atIndex:newSelectedIndex];
-		}
-		else if (animated)
-		{
-			CGRect rect = contentContainerView.bounds;
-			if (oldSelectedIndex < newSelectedIndex)
-				rect.origin.x = rect.size.width;
-			else
-				rect.origin.x = -rect.size.width;
-
-			toViewController.view.frame = rect;
-			tabButtonsContainerView.userInteractionEnabled = NO;
-
-			[self transitionFromViewController:fromViewController
-				toViewController:toViewController
-				duration:0.3
-				options:UIViewAnimationOptionLayoutSubviews | UIViewAnimationOptionCurveEaseOut
-				animations:^
-				{
-					CGRect rect = fromViewController.view.frame;
-					if (oldSelectedIndex < newSelectedIndex)
-						rect.origin.x = -rect.size.width;
-					else
-						rect.origin.x = rect.size.width;
-
-					fromViewController.view.frame = rect;
-					toViewController.view.frame = contentContainerView.bounds;
-					[self centerIndicatorOnButton:toButton];
-				}
-				completion:^(BOOL finished)
-				{
-					tabButtonsContainerView.userInteractionEnabled = YES;
-
-					if ([self.delegate respondsToSelector:@selector(mh_tabBarController:didSelectViewController:atIndex:)])
-						[self.delegate mh_tabBarController:self didSelectViewController:toViewController atIndex:newSelectedIndex];
-				}];
-		}
-		else  // not animated
-		{
-			[fromViewController.view removeFromSuperview];
-
-			toViewController.view.frame = contentContainerView.bounds;
-			[contentContainerView addSubview:toViewController.view];
-			[self centerIndicatorOnButton:toButton];
-
-			if ([self.delegate respondsToSelector:@selector(mh_tabBarController:didSelectViewController:atIndex:)])
-				[self.delegate mh_tabBarController:self didSelectViewController:toViewController atIndex:newSelectedIndex];
-		}
-	}
+    static BOOL flagLocked = NO;
+    if (flagLocked == NO) {
+        flagLocked = YES;
+        NSAssert(newSelectedIndex < [self.viewControllers count], @"View controller index out of bounds");
+        if ([self.delegate respondsToSelector:@selector(mh_tabBarController:shouldSelectViewController:atIndex:)])
+        {
+            UIViewController *toViewController = [self.viewControllers objectAtIndex:newSelectedIndex];
+            if (![self.delegate mh_tabBarController:self shouldSelectViewController:toViewController atIndex:newSelectedIndex])
+                return;
+        }
+        
+        if (![self isViewLoaded])
+        {
+            _selectedIndex = newSelectedIndex;
+        }
+        else if (_selectedIndex != newSelectedIndex)
+        {
+            UIViewController *fromViewController;
+            UIViewController *toViewController;
+            
+            if (_selectedIndex != NSNotFound)
+            {
+                UIButton *fromButton = (UIButton *)[tabButtonsContainerView viewWithTag:TAG_OFFSET + _selectedIndex];
+                [self deselectTabButton:fromButton];
+                fromViewController = self.selectedViewController;
+            }
+            
+            NSUInteger oldSelectedIndex = _selectedIndex;
+            _selectedIndex = newSelectedIndex;
+            
+            UIButton *toButton;
+            if (_selectedIndex != NSNotFound)
+            {
+                toButton = (UIButton *)[tabButtonsContainerView viewWithTag:TAG_OFFSET + _selectedIndex];
+                [self selectTabButton:toButton];
+                toViewController = self.selectedViewController;
+            }
+            
+            if (toViewController == nil)  // don't animate
+            {
+                [fromViewController.view removeFromSuperview];
+            }
+            else if (fromViewController == nil)  // don't animate
+            {
+                toViewController.view.frame = contentContainerView.bounds;
+                [contentContainerView addSubview:toViewController.view];
+                [self centerIndicatorOnButton:toButton];
+                
+                if ([self.delegate respondsToSelector:@selector(mh_tabBarController:didSelectViewController:atIndex:)])
+                    [self.delegate mh_tabBarController:self didSelectViewController:toViewController atIndex:newSelectedIndex];
+            }
+            else if (animated)
+            {
+                CGRect rect = contentContainerView.bounds;
+                if (oldSelectedIndex < newSelectedIndex)
+                    rect.origin.x = rect.size.width;
+                else
+                    rect.origin.x = -rect.size.width;
+                
+                toViewController.view.frame = rect;
+                tabButtonsContainerView.userInteractionEnabled = NO;
+                
+                [self transitionFromViewController:fromViewController
+                                  toViewController:toViewController
+                                          duration:0.3
+                                           options:UIViewAnimationOptionLayoutSubviews | UIViewAnimationOptionCurveEaseOut
+                                        animations:^
+                 {
+                     CGRect rect = fromViewController.view.frame;
+                     if (oldSelectedIndex < newSelectedIndex)
+                         rect.origin.x = -rect.size.width;
+                     else
+                         rect.origin.x = rect.size.width;
+                     
+                     fromViewController.view.frame = rect;
+                     toViewController.view.frame = contentContainerView.bounds;
+                     [self centerIndicatorOnButton:toButton];
+                 }
+                                        completion:^(BOOL finished)
+                 {
+                     tabButtonsContainerView.userInteractionEnabled = YES;
+                     
+                     if ([self.delegate respondsToSelector:@selector(mh_tabBarController:didSelectViewController:atIndex:)])
+                         [self.delegate mh_tabBarController:self didSelectViewController:toViewController atIndex:newSelectedIndex];
+                 }];
+            }
+            else  // not animated
+            {
+                [fromViewController.view removeFromSuperview];
+                
+                toViewController.view.frame = contentContainerView.bounds;
+                [contentContainerView addSubview:toViewController.view];
+                [self centerIndicatorOnButton:toButton];
+                
+                if ([self.delegate respondsToSelector:@selector(mh_tabBarController:didSelectViewController:atIndex:)])
+                    [self.delegate mh_tabBarController:self didSelectViewController:toViewController atIndex:newSelectedIndex];
+            }
+        }
+    }
+    flagLocked = NO;
 }
 
 - (UIViewController *)selectedViewController
@@ -344,6 +357,20 @@ static const NSInteger TAG_OFFSET = 1000;
 - (void)tabButtonPressed:(UIButton *)sender
 {
 	[self setSelectedIndex:sender.tag - TAG_OFFSET animated:YES];
+}
+
+-(void)swipeleft:(UISwipeGestureRecognizer*)gestureRecognizer
+{
+    if (self.selectedIndex < [self.viewControllers count]-1) {
+        [self setSelectedIndex:self.selectedIndex+1 animated:YES];
+    }
+}
+
+-(void)swiperight:(UISwipeGestureRecognizer*)gestureRecognizer
+{
+    if (self.selectedIndex > 0) {
+        [self setSelectedIndex:self.selectedIndex-1 animated:YES];
+    }
 }
 
 @end
