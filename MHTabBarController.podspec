@@ -7,6 +7,6 @@ Pod::Spec.new do |s|
   s.author   = { 'Bartosz Kulis' => 'bartosz.kulis@tdcg.pl' }
   s.source   = { :git => 'https://github.com/mac22/MHTabBarController.git', :branch => 'coinside' }
   s.platform = :ios
-  s.source_files = '*'
+  s.source_files = '/'
   s.requires_arc = true
 end
