@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name     = 'MHTabBarController'
-  s.version  = '0.1'
+  s.version  = '1.0.1'
   s.license  = 'MIT'
   s.summary  = 'mac22 fork of hollance.'
   s.homepage = 'https://github.com/mac22/MHTabBarController'
