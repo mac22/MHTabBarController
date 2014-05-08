@@ -147,11 +147,11 @@ static const NSInteger TAG_OFFSET = 1000;
     
     UISwipeGestureRecognizer * swiperight=[[UISwipeGestureRecognizer alloc]initWithTarget:self action:@selector(swiperight:)];
     swiperight.direction=UISwipeGestureRecognizerDirectionRight;
-    [self.view addGestureRecognizer:swiperight];
+    [contentContainerView addGestureRecognizer:swiperight];
     
     UISwipeGestureRecognizer * swipeleft=[[UISwipeGestureRecognizer alloc]initWithTarget:self action:@selector(swipeleft:)];
     swipeleft.direction=UISwipeGestureRecognizerDirectionLeft;
-    [self.view addGestureRecognizer:swipeleft];
+    [contentContainerView addGestureRecognizer:swipeleft];
 
 	[self reloadTabButtons];
 }
